@@ -71,6 +71,9 @@ public class CrimeListFragment extends Fragment {
 
         private final List<Crime> mCrimes;
 
+        private static final int VIEW_TYPE_1 = 0;
+        private static final int VIEW_TYPE_2 = 1;
+
         CrimeAdapter(List<Crime> crimes) {
             mCrimes = crimes;
         }
@@ -79,7 +82,9 @@ public class CrimeListFragment extends Fragment {
         @Override
         public CrimeViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             LayoutInflater layoutInflater = LayoutInflater.from(getActivity());
-            View view = layoutInflater.inflate(R.layout.list_item_crime, parent, false);
+            int layoutId = (viewType == VIEW_TYPE_1) ?
+                    R.layout.list_item_crime : R.layout.list_item_serious_crime;
+            View view = layoutInflater.inflate(layoutId, parent, false);
             return new CrimeViewHolder(view);
         }
 
@@ -92,6 +97,15 @@ public class CrimeListFragment extends Fragment {
         @Override
         public int getItemCount() {
             return mCrimes.size();
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            if (mCrimes.get(position).requiresPolice()) {
+                return VIEW_TYPE_2;
+            } else {
+                return VIEW_TYPE_1;
+            }
         }
     }
 }
