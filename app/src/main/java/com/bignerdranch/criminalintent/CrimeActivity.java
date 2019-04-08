@@ -18,7 +18,6 @@ public class CrimeActivity extends SingleFragmentActivity {
 
     @Override
     Fragment createFragment() {
-        // SOS: getSerializableExtra is how I retrieve objects in general
         UUID crimeId = (UUID) getIntent().getSerializableExtra(EXTRA_CRIME_ID);
         return CrimeFragment.newInstance(crimeId);
     }
