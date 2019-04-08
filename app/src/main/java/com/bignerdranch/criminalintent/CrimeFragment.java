@@ -28,18 +28,8 @@ public class CrimeFragment extends Fragment {
         // Required empty public constructor
     }
 
-    // SOS: The easy way to get the id in onCreate is: getActivity().getIntent().get(FOO), but then
-    // the fragment must know the id in the intent is called FOO. A better way is to demand others
-    // pass an id as part of the creation of the fragment and to stash that id as an argument that
-    // the fragment can later retrieve at any point. That is done in the following static method which
-    // everyone must call if they want a CrimeFragment. Unfortunately, the constructor can't be made
-    // private (AS complains). Finally, a great advantage of args is that they persist (like an intent).
-    // The alternative would be to use a constructor that takes the id as arg and saves it in an instance
-    // field. And then I'd have to save/restore this field with the onSaveInstanceState mechanism...
     static CrimeFragment newInstance(UUID crimeId) {
         Bundle args = new Bundle();
-        // SOS: in CrimeActivity we do intent.putExtra(FOO, obj), but Bundle doesn't have such a
-        // generic method
         args.putSerializable(ARG_CRIME_ID, crimeId);
 
         CrimeFragment fragment = new CrimeFragment();
