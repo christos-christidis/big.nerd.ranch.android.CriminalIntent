@@ -1,5 +1,6 @@
 package com.bignerdranch.criminalintent;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
@@ -10,12 +11,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.List;
 
 public class CrimeListFragment extends Fragment {
 
+    private CrimeAdapter mCrimeAdapter;
     private RecyclerView mCrimeRecyclerView;
 
     public CrimeListFragment() {
@@ -35,11 +36,25 @@ public class CrimeListFragment extends Fragment {
         return view;
     }
 
+    // SOS: the user may change the crime details in CrimeActivity, in which case when we get back,
+    // we have to refresh the data (this way is heavy-handed since we update whether or not anything
+    // changed, check challenge for the right way). Also, note that we call this in onResume, not in
+    // onStart because the activity on top of it (CrimeActivity) might also be transparent.
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateUI();
+    }
+
     private void updateUI() {
         CrimeLab crimeLab = CrimeLab.get(getActivity());
 
-        CrimeAdapter crimeAdapter = new CrimeAdapter(crimeLab.getCrimes());
-        mCrimeRecyclerView.setAdapter(crimeAdapter);
+        if (mCrimeAdapter == null) {
+            mCrimeAdapter = new CrimeAdapter(crimeLab.getCrimes());
+            mCrimeRecyclerView.setAdapter(mCrimeAdapter);
+        } else {
+            mCrimeAdapter.notifyDataSetChanged();
+        }
     }
 
     private class CrimeViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
@@ -56,6 +71,7 @@ public class CrimeListFragment extends Fragment {
             mTitleTextView = view.findViewById(R.id.crime_title);
             mDateTextView = view.findViewById(R.id.crime_date);
             mSolvedImageView = view.findViewById(R.id.crime_solved);
+            itemView.setOnClickListener(this);  // SOS: wtf, had forgotten this
         }
 
         void bind(Crime crime) {
@@ -67,7 +83,8 @@ public class CrimeListFragment extends Fragment {
 
         @Override
         public void onClick(View v) {
-            Toast.makeText(getActivity(), mCrime.getTitle() + " clicked!", Toast.LENGTH_SHORT).show();
+            Intent intent = CrimeActivity.newIntent(getActivity(), mCrime.getId());
+            startActivity(intent);
         }
     }
 
