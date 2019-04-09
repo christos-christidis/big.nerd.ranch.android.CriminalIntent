@@ -1,8 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v4.view.ViewPager xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/crime_view_pager"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    tools:context=".CrimePagerActivity" />
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- SOS: ViewPager doesn't obey wrap_content! I CAN set its height to the height of one of its
+    views programmatically, but it's COMPLICATED. Also, if confined to the upper part, I'd lose the
+    nice swipe on the bottom half on the screen. For these reasons, I choose to make it stretch -->
+    <android.support.v4.view.ViewPager
+        android:id="@+id/crime_view_pager"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        tools:context=".CrimePagerActivity" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/go_to_first"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onButtonClick"
+            android:text="@string/go_to_first"
+            tools:ignore="ButtonStyle" />
+
+        <Button
+            android:id="@+id/go_to_last"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onButtonClick"
+            android:text="@string/go_to_last"
+            tools:ignore="ButtonStyle" />
+    </LinearLayout>
+</LinearLayout>

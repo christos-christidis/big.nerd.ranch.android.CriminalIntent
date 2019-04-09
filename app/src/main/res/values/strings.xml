@@ -7,4 +7,6 @@
     <string name="list_item_title">Crime Title</string>
     <string name="list_item_date">Crime Date</string>
     <string name="image_of_handcuffs">image of handcuffs</string>
+    <string name="go_to_last"><![CDATA[Go To Last >]]></string>
+    <string name="go_to_first"><![CDATA[< Go To First]]></string>
 </resources>
