@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- SOS: this view will be inflated and shown in between the dialog's title and buttons -->
+
+<!-- SOS: the android:id is critical! It means that the STATE of the view (here, it's the date we've
+clicked on) will be preserved across screen rotations! -->
+<DatePicker xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/date_picker"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:calendarViewShown="false" />
