@@ -1,10 +1,13 @@
 package com.bignerdranch.criminalintent;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -16,13 +19,18 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import java.util.Date;
 import java.util.UUID;
 
 public class CrimeFragment extends Fragment {
 
     private final static String ARG_CRIME_ID = "arg_crime_id";
+    private final static String DATE_DIALOG_TAG = "DateDialog";
+    private static final int DATE_REQUEST_CODE = 3;
 
     private Crime mCrime;
+
+    private Button mDateButton;
 
     public CrimeFragment() {
         // Required empty public constructor
@@ -86,9 +94,29 @@ public class CrimeFragment extends Fragment {
     }
 
     private void setupDateButton(View view) {
-        Button dateButton = view.findViewById(R.id.date_button);
-        dateButton.setText(mCrime.getDate().toString());
-        dateButton.setEnabled(false);
+        mDateButton = view.findViewById(R.id.date_button);
+        mDateButton.setText(mCrime.getDate().toString());
+        mDateButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FragmentManager fragmentManager = getFragmentManager();
+                if (fragmentManager != null) {
+                    DialogFragment dialogFragment = DatePickerFragment.newInstance(mCrime.getDate());
+
+                    // SOS: In chapter10challenges, we got data from a fragment to another fragment
+                    // easily, because the 2 host-activities were parent-child. Now, we don't have any
+                    // relation between the dialog-fragment and the fragment below. This call
+                    // establishes a relation between them that persists eg on screen rotation.
+                    dialogFragment.setTargetFragment(CrimeFragment.this, DATE_REQUEST_CODE);
+
+                    // SOS: show() shows the DialogFragment AND adds it to the fragment-list and the
+                    // tag is how the manager identifies the fragment. Note that there's another
+                    // variant of show which takes a fragmentTransaction. In that case, I'm responsible
+                    // for committing the transaction.
+                    dialogFragment.show(fragmentManager, DATE_DIALOG_TAG);
+                }
+            }
+        });
     }
 
     private void setupSolvedCheckbox(View view) {
@@ -100,5 +128,18 @@ public class CrimeFragment extends Fragment {
                 mCrime.setSolved(isChecked);
             }
         });
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode != Activity.RESULT_OK) {
+            return;
+        }
+
+        if (requestCode == DATE_REQUEST_CODE) {
+            Date date = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
+            mCrime.setDate(date);
+            mDateButton.setText(mCrime.getDate().toString());
+        }
     }
 }
