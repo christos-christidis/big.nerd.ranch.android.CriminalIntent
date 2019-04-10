@@ -10,6 +10,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,11 +27,14 @@ public class CrimeFragment extends Fragment {
 
     private final static String ARG_CRIME_ID = "arg_crime_id";
     private final static String DATE_DIALOG_TAG = "DateDialog";
+    private final static String TIME_DIALOG_TAG = "TimeDialog";
     private static final int DATE_REQUEST_CODE = 3;
+    private static final int TIME_REQUEST_CODE = 4;
 
     private Crime mCrime;
 
     private Button mDateButton;
+    private Button mTimeButton;
 
     public CrimeFragment() {
         // Required empty public constructor
@@ -69,6 +73,7 @@ public class CrimeFragment extends Fragment {
 
         setupTitleField(view);
         setupDateButton(view);
+        setupTimeButton(view);
         setupSolvedCheckbox(view);
 
         return view;
@@ -95,28 +100,44 @@ public class CrimeFragment extends Fragment {
 
     private void setupDateButton(View view) {
         mDateButton = view.findViewById(R.id.date_button);
-        mDateButton.setText(mCrime.getDate().toString());
+        setDateButtonText(mCrime.getDate());
         mDateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 FragmentManager fragmentManager = getFragmentManager();
                 if (fragmentManager != null) {
                     DialogFragment dialogFragment = DatePickerFragment.newInstance(mCrime.getDate());
-
-                    // SOS: In chapter10challenges, we got data from a fragment to another fragment
-                    // easily, because the 2 host-activities were parent-child. Now, we don't have any
-                    // relation between the dialog-fragment and the fragment below. This call
-                    // establishes a relation between them that persists eg on screen rotation.
                     dialogFragment.setTargetFragment(CrimeFragment.this, DATE_REQUEST_CODE);
-
-                    // SOS: show() shows the DialogFragment AND adds it to the fragment-list and the
-                    // tag is how the manager identifies the fragment. Note that there's another
-                    // variant of show which takes a fragmentTransaction. In that case, I'm responsible
-                    // for committing the transaction.
                     dialogFragment.show(fragmentManager, DATE_DIALOG_TAG);
                 }
             }
         });
+    }
+
+    private void setupTimeButton(View view) {
+        mTimeButton = view.findViewById(R.id.time_button);
+        setTimeButtonText(mCrime.getDate());
+        mTimeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                FragmentManager fragmentManager = getFragmentManager();
+                if (fragmentManager != null) {
+                    DialogFragment dialogFragment = TimePickerFragment.newInstance(mCrime.getDate());
+                    dialogFragment.setTargetFragment(CrimeFragment.this, TIME_REQUEST_CODE);
+                    dialogFragment.show(fragmentManager, TIME_DIALOG_TAG);
+                }
+            }
+        });
+    }
+
+    private void setDateButtonText(Date date) {
+        java.text.DateFormat dateFormat = DateFormat.getMediumDateFormat(getActivity());
+        mDateButton.setText(dateFormat.format(date));
+    }
+
+    private void setTimeButtonText(Date date) {
+        java.text.DateFormat timeFormat = DateFormat.getTimeFormat(getActivity());
+        mTimeButton.setText(timeFormat.format(date));
     }
 
     private void setupSolvedCheckbox(View view) {
@@ -137,9 +158,22 @@ public class CrimeFragment extends Fragment {
         }
 
         if (requestCode == DATE_REQUEST_CODE) {
-            Date date = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
-            mCrime.setDate(date);
-            mDateButton.setText(mCrime.getDate().toString());
+            Date newDate = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
+            mCrime.setDate(newDate);
+            setDateButtonText(newDate);
+        } else if (requestCode == TIME_REQUEST_CODE) {
+            // SOS: newDate will have the right hour/minute and year/month/day=0, so I have to add them.
+            Date newDate = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
+            addYearMonthDay(mCrime.getDate(), newDate);
+            mCrime.setDate(newDate);
+            setTimeButtonText(newDate);
         }
+    }
+
+    private void addYearMonthDay(Date srcDate, Date destDate) {
+        // SOS: ok, these are all deprecated, but fixing them makes the code harder to understand so...
+        destDate.setYear(srcDate.getYear());
+        destDate.setMonth(srcDate.getMonth());
+        destDate.setDate(srcDate.getDate());
     }
 }
