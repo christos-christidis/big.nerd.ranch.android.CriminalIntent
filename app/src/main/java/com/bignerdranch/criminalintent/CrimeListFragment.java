@@ -16,7 +16,9 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.List;
@@ -27,6 +29,7 @@ public class CrimeListFragment extends Fragment {
 
     private CrimeAdapter mCrimeAdapter;
     private RecyclerView mCrimeRecyclerView;
+    private LinearLayout mAlternativeView;
 
     private boolean mSubtitleVisible;
 
@@ -57,6 +60,21 @@ public class CrimeListFragment extends Fragment {
 
         mCrimeRecyclerView = view.findViewById(R.id.crime_recycler_view);
         mCrimeRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+
+        mAlternativeView = view.findViewById(R.id.alternative_view);
+
+        Button button = view.findViewById(R.id.create_crime_button);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // SOS: same thing that I do when the Add menu item is clicked.
+                Activity activity = getActivity();
+                if (activity == null) {
+                    return;
+                }
+                addNewCrime(activity);
+            }
+        });
 
         updateUI();
 
@@ -90,10 +108,7 @@ public class CrimeListFragment extends Fragment {
 
         switch (item.getItemId()) {
             case R.id.new_crime:
-                Crime crime = new Crime();
-                CrimeLab.get(activity).addCrime(crime);
-                Intent intent = CrimePagerActivity.newIntent(activity, crime.getId());
-                startActivity(intent);
+                addNewCrime(activity);
                 return true;
             case R.id.show_subtitle:
                 mSubtitleVisible = !mSubtitleVisible;
@@ -103,6 +118,13 @@ public class CrimeListFragment extends Fragment {
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    private void addNewCrime(Activity activity) {
+        Crime crime = new Crime();
+        CrimeLab.get(activity).addCrime(crime);
+        Intent intent = CrimePagerActivity.newIntent(activity, crime.getId());
+        startActivity(intent);
     }
 
     private void updateSubtitle() {
@@ -133,6 +155,14 @@ public class CrimeListFragment extends Fragment {
             mCrimeRecyclerView.setAdapter(mCrimeAdapter);
         } else {
             mCrimeAdapter.notifyDataSetChanged();
+        }
+
+        if (crimeLab.getCrimes().isEmpty()) {
+            mCrimeRecyclerView.setVisibility(View.GONE);
+            mAlternativeView.setVisibility(View.VISIBLE);
+        } else {
+            mCrimeRecyclerView.setVisibility(View.VISIBLE);
+            mAlternativeView.setVisibility(View.GONE);
         }
 
         updateSubtitle();
