@@ -21,10 +21,6 @@ import android.widget.TextView;
 
 import java.util.List;
 
-// SOS: When we use the "Up" button (ie hierarchical navigation), ALL activities between this
-// and its parent activity are popped off the stack and, crucially, a BRAND NEW CrimeListActivity is
-// instantiated! This means that EVERYTHING is lost (eg mSubtitleVisible). There are 2 less than ideal
-// solutions (presented on page 265), but for now, as the book says, we let it slide.
 public class CrimeListFragment extends Fragment {
 
     private static final String SAVED_SUBTITLE_VISIBLE = "saved_subtitle_visible";
@@ -73,14 +69,10 @@ public class CrimeListFragment extends Fragment {
         updateUI();
     }
 
-    // SOS: This will be called by the FragmentManager when the same method is called on the activity
-    // ONLY if we call setHasOptionsMenu (we do that in onCreate).
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.fragment_crime_list, menu);
 
-        // SOS: subtitleItem's title is set every time the menu is created. This happens after screen
-        // rotation OR when we call invalidateOptionsMenu (see onOptionsItemSelected).
         MenuItem subtitleItem = menu.findItem(R.id.show_subtitle);
         if (mSubtitleVisible) {
             subtitleItem.setTitle(R.string.hide_subtitle);
@@ -126,7 +118,7 @@ public class CrimeListFragment extends Fragment {
 
         CrimeLab crimeLab = CrimeLab.get(activity);
         int numCrimes = crimeLab.getCrimes().size();
-        String subtitle = getString(R.string.subtitle_format, numCrimes);
+        String subtitle = getResources().getQuantityString(R.plurals.subtitle_plural, numCrimes, numCrimes);
         if (!mSubtitleVisible) {
             subtitle = null;
         }
@@ -143,9 +135,6 @@ public class CrimeListFragment extends Fragment {
             mCrimeAdapter.notifyDataSetChanged();
         }
 
-        // SOS: this solves the same problem we had w the adapter's data. Specifically, if we add a
-        // crime and then return to the list w Back from CrimeFragment, the subtitle will not be
-        // refreshed to show the new number of crimes. Now, updateUI is called in onResume so...
         updateSubtitle();
     }
 
