@@ -18,9 +18,8 @@ import android.widget.DatePicker;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.Objects;
 
-// SOS: It's possible to show a bare dialog, but it's better to do it this way (inside a DialogFragment)
-// cause the bare dialog vanishes when user rotates the screen...
 public class DatePickerFragment extends DialogFragment {
 
     private static final String ARG_DATE = "arg_date";
@@ -28,8 +27,6 @@ public class DatePickerFragment extends DialogFragment {
 
     private DatePicker mDatePicker;
 
-    // SOS: Again, the best way to pass data to fragments (at least if I have to do it before their
-    // view is inflated) is via the newInstance/args method.
     static DatePickerFragment newInstance(Date date) {
         Bundle args = new Bundle();
         args.putSerializable(ARG_DATE, date);
@@ -42,15 +39,13 @@ public class DatePickerFragment extends DialogFragment {
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-        // SOS: an alternative to inflating would be to just do: View v = new DatePicker(..). In that
-        // case I'd also have to set the id programmatically, because: read SOS in date_picker.xml
         @SuppressLint("InflateParams")
         View dialogView = LayoutInflater.from(getActivity())
                 .inflate(R.layout.date_picker, null);
 
         initializeDatePicker(dialogView);
 
-        return new AlertDialog.Builder(getActivity())
+        return new AlertDialog.Builder(Objects.requireNonNull(getActivity()))
                 .setView(dialogView)
                 .setTitle(R.string.date_picker_title)
                 .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
@@ -91,10 +86,6 @@ public class DatePickerFragment extends DialogFragment {
 
         Intent intent = new Intent();
         intent.putExtra(EXTRA_DATE, date);
-
-        // SOS: Note how we call this directly on the other fragment, whereas before in the parent-
-        // child situation, this was called by the ActivityManager! Also note how we get the request-
-        // code that we set when we called setTargetFragment in CrimeFragment.
         targetFragment.onActivityResult(getTargetRequestCode(), Activity.RESULT_OK, intent);
     }
 }

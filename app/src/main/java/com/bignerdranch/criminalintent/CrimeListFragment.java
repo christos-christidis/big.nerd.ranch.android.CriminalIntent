@@ -1,12 +1,19 @@
 package com.bignerdranch.criminalintent;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -14,13 +21,37 @@ import android.widget.TextView;
 
 import java.util.List;
 
+// SOS: When we use the "Up" button (ie hierarchical navigation), ALL activities between this
+// and its parent activity are popped off the stack and, crucially, a BRAND NEW CrimeListActivity is
+// instantiated! This means that EVERYTHING is lost (eg mSubtitleVisible). There are 2 less than ideal
+// solutions (presented on page 265), but for now, as the book says, we let it slide.
 public class CrimeListFragment extends Fragment {
+
+    private static final String SAVED_SUBTITLE_VISIBLE = "saved_subtitle_visible";
 
     private CrimeAdapter mCrimeAdapter;
     private RecyclerView mCrimeRecyclerView;
 
+    private boolean mSubtitleVisible;
+
     public CrimeListFragment() {
         // Required empty public constructor
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+
+        if (savedInstanceState != null) {
+            mSubtitleVisible = savedInstanceState.getBoolean(SAVED_SUBTITLE_VISIBLE);
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean(SAVED_SUBTITLE_VISIBLE, mSubtitleVisible);
     }
 
     @Override
@@ -42,6 +73,66 @@ public class CrimeListFragment extends Fragment {
         updateUI();
     }
 
+    // SOS: This will be called by the FragmentManager when the same method is called on the activity
+    // ONLY if we call setHasOptionsMenu (we do that in onCreate).
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.fragment_crime_list, menu);
+
+        // SOS: subtitleItem's title is set every time the menu is created. This happens after screen
+        // rotation OR when we call invalidateOptionsMenu (see onOptionsItemSelected).
+        MenuItem subtitleItem = menu.findItem(R.id.show_subtitle);
+        if (mSubtitleVisible) {
+            subtitleItem.setTitle(R.string.hide_subtitle);
+        } else {
+            subtitleItem.setTitle(R.string.show_subtitle);
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        Activity activity = getActivity();
+        if (activity == null) {
+            return super.onOptionsItemSelected(item);
+        }
+
+        switch (item.getItemId()) {
+            case R.id.new_crime:
+                Crime crime = new Crime();
+                CrimeLab.get(activity).addCrime(crime);
+                Intent intent = CrimePagerActivity.newIntent(activity, crime.getId());
+                startActivity(intent);
+                return true;
+            case R.id.show_subtitle:
+                mSubtitleVisible = !mSubtitleVisible;
+                activity.invalidateOptionsMenu();
+                updateSubtitle();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private void updateSubtitle() {
+        AppCompatActivity activity = (AppCompatActivity) getActivity();
+        if (activity == null) {
+            return;
+        }
+
+        ActionBar actionBar = activity.getSupportActionBar();
+        if (actionBar == null) {
+            return;
+        }
+
+        CrimeLab crimeLab = CrimeLab.get(activity);
+        int numCrimes = crimeLab.getCrimes().size();
+        String subtitle = getString(R.string.subtitle_format, numCrimes);
+        if (!mSubtitleVisible) {
+            subtitle = null;
+        }
+        actionBar.setSubtitle(subtitle);
+    }
+
     private void updateUI() {
         CrimeLab crimeLab = CrimeLab.get(getActivity());
 
@@ -51,6 +142,11 @@ public class CrimeListFragment extends Fragment {
         } else {
             mCrimeAdapter.notifyDataSetChanged();
         }
+
+        // SOS: this solves the same problem we had w the adapter's data. Specifically, if we add a
+        // crime and then return to the list w Back from CrimeFragment, the subtitle will not be
+        // refreshed to show the new number of crimes. Now, updateUI is called in onResume so...
+        updateSubtitle();
     }
 
     private class CrimeViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {

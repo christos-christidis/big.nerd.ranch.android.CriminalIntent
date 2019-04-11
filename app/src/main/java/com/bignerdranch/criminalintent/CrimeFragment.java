@@ -102,17 +102,7 @@ public class CrimeFragment extends Fragment {
                 FragmentManager fragmentManager = getFragmentManager();
                 if (fragmentManager != null) {
                     DialogFragment dialogFragment = DatePickerFragment.newInstance(mCrime.getDate());
-
-                    // SOS: In chapter10challenges, we got data from a fragment to another fragment
-                    // easily, because the 2 host-activities were parent-child. Now, we don't have any
-                    // relation between the dialog-fragment and the fragment below. This call
-                    // establishes a relation between them that persists eg on screen rotation.
                     dialogFragment.setTargetFragment(CrimeFragment.this, DATE_REQUEST_CODE);
-
-                    // SOS: show() shows the DialogFragment AND adds it to the fragment-list and the
-                    // tag is how the manager identifies the fragment. Note that there's another
-                    // variant of show which takes a fragmentTransaction. In that case, I'm responsible
-                    // for committing the transaction.
                     dialogFragment.show(fragmentManager, DATE_DIALOG_TAG);
                 }
             }
