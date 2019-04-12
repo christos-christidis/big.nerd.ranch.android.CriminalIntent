@@ -127,11 +127,16 @@ public class CrimeListFragment extends Fragment {
 
     private void updateUI() {
         CrimeLab crimeLab = CrimeLab.get(getActivity());
+        List<Crime> crimes = crimeLab.getCrimes();
 
         if (mCrimeAdapter == null) {
-            mCrimeAdapter = new CrimeAdapter(crimeLab.getCrimes());
+            mCrimeAdapter = new CrimeAdapter(crimes);
             mCrimeRecyclerView.setAdapter(mCrimeAdapter);
         } else {
+            // SOS: Previously we had just one mCrimes list, which was passed to adapter on creation,
+            // and we made changes to that. Now getCrimes (in CrimeLab) returns a new list every time,
+            // so the adapter's list can be stale and must be reset before calling notify.
+            mCrimeAdapter.setCrimes(crimes);
             mCrimeAdapter.notifyDataSetChanged();
         }
 
@@ -171,9 +176,13 @@ public class CrimeListFragment extends Fragment {
 
     private class CrimeAdapter extends RecyclerView.Adapter<CrimeViewHolder> {
 
-        private final List<Crime> mCrimes;
+        private List<Crime> mCrimes;
 
         CrimeAdapter(List<Crime> crimes) {
+            mCrimes = crimes;
+        }
+
+        void setCrimes(List<Crime> crimes) {
             mCrimes = crimes;
         }
 

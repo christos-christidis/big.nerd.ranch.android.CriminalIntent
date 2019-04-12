@@ -74,6 +74,14 @@ public class CrimeFragment extends Fragment {
         return view;
     }
 
+    // SOS: this is where we update the (possibly changed) crime in db. The crime was initially added
+    // to the db in CrimeListFragment before it was passed as an arg to CrimeFragment.
+    @Override
+    public void onPause() {
+        super.onPause();
+        CrimeLab.get(getActivity()).updateCrime(mCrime);
+    }
+
     private void setupTitleField(View view) {
         EditText titleField = view.findViewById(R.id.crime_title);
         titleField.setText(mCrime.getTitle());

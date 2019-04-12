@@ -3,7 +3,7 @@ package com.bignerdranch.criminalintent;
 import java.util.Date;
 import java.util.UUID;
 
-class Crime {
+public class Crime {
 
     private UUID mId;
     private String mTitle;
@@ -11,8 +11,12 @@ class Crime {
     private boolean mSolved;
 
     Crime() {
-        mId = UUID.randomUUID();
-        mDate = new Date();     // returns current date
+        this(UUID.randomUUID());
+    }
+
+    public Crime(UUID id) {
+        mId = id;
+        mDate = new Date();
     }
 
     UUID getId() {
@@ -27,7 +31,7 @@ class Crime {
         return mTitle;
     }
 
-    void setTitle(String title) {
+    public void setTitle(String title) {
         mTitle = title;
     }
 
@@ -35,7 +39,7 @@ class Crime {
         return mDate;
     }
 
-    void setDate(Date date) {
+    public void setDate(Date date) {
         mDate = date;
     }
 
@@ -43,7 +47,7 @@ class Crime {
         return mSolved;
     }
 
-    void setSolved(boolean solved) {
+    public void setSolved(boolean solved) {
         mSolved = solved;
     }
 }
