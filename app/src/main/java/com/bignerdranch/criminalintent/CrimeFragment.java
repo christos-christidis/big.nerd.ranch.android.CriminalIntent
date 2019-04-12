@@ -11,6 +11,9 @@ import android.support.v4.app.FragmentManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -60,6 +63,8 @@ public class CrimeFragment extends Fragment {
                 activity.finish();
             }
         }
+
+        setHasOptionsMenu(true);
     }
 
     @Override
@@ -74,12 +79,32 @@ public class CrimeFragment extends Fragment {
         return view;
     }
 
-    // SOS: this is where we update the (possibly changed) crime in db. The crime was initially added
-    // to the db in CrimeListFragment before it was passed as an arg to CrimeFragment.
     @Override
     public void onPause() {
         super.onPause();
         CrimeLab.get(getActivity()).updateCrime(mCrime);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.fragment_crime, menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        Activity activity = getActivity();
+        if (activity == null) {
+            return super.onOptionsItemSelected(item);
+        }
+
+        switch (item.getItemId()) {
+            case R.id.delete_crime:
+                CrimeLab.get(activity).deleteCrime(mCrime);
+                activity.finish();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     private void setupTitleField(View view) {

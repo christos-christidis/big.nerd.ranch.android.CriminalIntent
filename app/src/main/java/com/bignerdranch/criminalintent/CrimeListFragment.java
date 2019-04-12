@@ -133,9 +133,6 @@ public class CrimeListFragment extends Fragment {
             mCrimeAdapter = new CrimeAdapter(crimes);
             mCrimeRecyclerView.setAdapter(mCrimeAdapter);
         } else {
-            // SOS: Previously we had just one mCrimes list, which was passed to adapter on creation,
-            // and we made changes to that. Now getCrimes (in CrimeLab) returns a new list every time,
-            // so the adapter's list can be stale and must be reset before calling notify.
             mCrimeAdapter.setCrimes(crimes);
             mCrimeAdapter.notifyDataSetChanged();
         }
