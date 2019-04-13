@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.Point;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
@@ -22,6 +23,7 @@ import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -35,7 +37,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-public class CrimeFragment extends Fragment {
+public class CrimeFragment extends Fragment implements ViewTreeObserver.OnGlobalLayoutListener {
 
     private final static String ARG_CRIME_ID = "arg_crime_id";
 
@@ -317,11 +319,10 @@ public class CrimeFragment extends Fragment {
         return report;
     }
 
+    // SOS: Every time I want to update photo, I add the fragment as listener to the layout passes
     private void updatePhotoView() {
         if (fileExists(mPhotoFile)) {
-            if (getActivity() == null) return;
-            Bitmap bitmap = PictureUtils.getConservativeEstimateBitmap(mPhotoFile.getPath(), getActivity());
-            mPhotoView.setImageBitmap(bitmap);
+            mPhotoView.getViewTreeObserver().addOnGlobalLayoutListener(this);
         } else {
             mPhotoView.setImageDrawable(null);
         }
@@ -329,5 +330,15 @@ public class CrimeFragment extends Fragment {
 
     private boolean fileExists(File file) {
         return file != null && file.exists();
+    }
+
+    // SOS: after a layout pass, the size of mPhotoView is valid, so I can use it to load exactly the
+    // right size of bitmap from memory. Then, I remove myself as listener (then I get re-added etc..)
+    @Override
+    public void onGlobalLayout() {
+        Point photoViewSize = new Point(mPhotoView.getWidth(), mPhotoView.getHeight());
+        Bitmap bitmap = PictureUtils.getScaledBitmap(mPhotoFile.getPath(), photoViewSize);
+        mPhotoView.setImageBitmap(bitmap);
+        mPhotoView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
     }
 }

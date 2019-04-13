@@ -7,7 +7,7 @@ import android.graphics.Point;
 
 class PictureUtils {
 
-    private static Bitmap getScaledBitmap(String path, Point destSize) {
+    static Bitmap getScaledBitmap(String path, Point destSize) {
         Point srcSize = getSrcImageSize(path);
 
         int inSampleSize = 1;

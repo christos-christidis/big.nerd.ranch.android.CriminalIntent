@@ -25,8 +25,6 @@ public class BiggerImageFragment extends DialogFragment {
         return fragment;
     }
 
-    // SOS: Hm, this is unsatisfactory to me (I get white lines above and below), but nothing on the
-    // internet seems to work... in any case, challenge done.
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
