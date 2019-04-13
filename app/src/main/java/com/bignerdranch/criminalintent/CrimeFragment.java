@@ -3,15 +3,19 @@ package com.bignerdranch.criminalintent;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.content.FileProvider;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.format.DateFormat;
@@ -22,22 +26,33 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.io.File;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
+// SOS: There's an alternative to the strategy used here. I can create an intent with the action & the
+// uri and then call intent.setFlags(FLAG_GRANT_WRITE_URI_PERMISSION). The responding app will be the
+// only one that has permission and the permission will live as long as my app lives. But I can easily
+// revoke permission at any point with the way presented here. Seems better to me.
 public class CrimeFragment extends Fragment {
 
     private final static String ARG_CRIME_ID = "arg_crime_id";
     private final static String DATE_DIALOG_TAG = "DateDialog";
     private static final int DATE_REQUEST_CODE = 3;
     private static final int CONTACT_REQUEST_CODE = 4;
+    private static final int PHOTO_REQUEST_CODE = 5;
 
     private Crime mCrime;
 
     private Button mDateButton;
     private Button mChooseSuspectButton;
+    private ImageView mPhotoView;
+    private File mPhotoFile;    // SOS: this File points to the absolute path of the photo
 
     public CrimeFragment() {
         // Required empty public constructor
@@ -58,7 +73,9 @@ public class CrimeFragment extends Fragment {
         Bundle args = getArguments();
         if (args != null) {
             UUID crimeId = (UUID) args.getSerializable(ARG_CRIME_ID);
-            mCrime = CrimeLab.get(getContext()).getCrime(crimeId);
+            CrimeLab crimeLab = CrimeLab.get(getContext());
+            mCrime = crimeLab.getCrime(crimeId);
+            mPhotoFile = crimeLab.getPhotoFile(mCrime, getActivity());
         } else {
             Activity activity = getActivity();
             Toast.makeText(activity, "someone forgot to set the arguments for CrimeFragment!",
@@ -74,11 +91,14 @@ public class CrimeFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_crime, container, false);
 
-        setupTitleField(view);
-        setupDateButton(view);
-        setupSolvedCheckbox(view);
+        setUpTitleField(view);
+        setUpDateButton(view);
+        setUpSolvedCheckbox(view);
         setUpSendReportButton(view);
         setUpChooseSuspectButton(view);
+        setUpPhotoView(view);
+        setUpCameraButton(view);
+
         return view;
     }
 
@@ -88,7 +108,7 @@ public class CrimeFragment extends Fragment {
         CrimeLab.get(getActivity()).updateCrime(mCrime);
     }
 
-    private void setupTitleField(View view) {
+    private void setUpTitleField(View view) {
         EditText titleField = view.findViewById(R.id.crime_title);
         titleField.setText(mCrime.getTitle());
         titleField.addTextChangedListener(new TextWatcher() {
@@ -107,7 +127,7 @@ public class CrimeFragment extends Fragment {
         });
     }
 
-    private void setupDateButton(View view) {
+    private void setUpDateButton(View view) {
         mDateButton = view.findViewById(R.id.date_button);
         mDateButton.setText(mCrime.getDate().toString());
         mDateButton.setOnClickListener(new View.OnClickListener() {
@@ -123,7 +143,7 @@ public class CrimeFragment extends Fragment {
         });
     }
 
-    private void setupSolvedCheckbox(View view) {
+    private void setUpSolvedCheckbox(View view) {
         CheckBox solvedCheckbox = view.findViewById(R.id.solved_checkbox);
         solvedCheckbox.setChecked(mCrime.isSolved());
         solvedCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -170,8 +190,51 @@ public class CrimeFragment extends Fragment {
         }
     }
 
-    // SOS: if there's no activity to handle the intent, Android throws an exception. This check makes
-    // sure there's an app. The other way to avoid an exception is to use Intent.createChooser
+    private void setUpPhotoView(View view) {
+        mPhotoView = view.findViewById(R.id.crime_photo);
+        updatePhotoView();
+    }
+
+    private void setUpCameraButton(View view) {
+        // SOS: it's necessary to make this final, so that it can be accessed inside onClick.
+        final Activity activity = getActivity();
+        if (activity == null) {
+            return;
+        }
+
+        ImageButton cameraButton = view.findViewById(R.id.camera_button);
+        final Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+
+        final PackageManager packageManager = activity.getPackageManager();
+
+        boolean canTakePhoto = mPhotoFile != null &&
+                intent.resolveActivity(packageManager) != null;
+
+        cameraButton.setEnabled(canTakePhoto);
+        cameraButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // SOS: this constructs a URI from the authority + the file (the file already contains
+                // an absolute path). If I don't add the uri, camera will put a thumbnail image in its
+                // return intent
+                Uri uri = FileProvider.getUriForFile(activity,
+                        "com.bignerdranch.criminalintent.fileprovider", mPhotoFile);
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+
+                List<ResolveInfo> cameraActivities = packageManager.queryIntentActivities(
+                        intent, PackageManager.MATCH_DEFAULT_ONLY);
+
+                // SOS: I grant write access ONLY to the specific uri to the packages of the activities
+                for (ResolveInfo info : cameraActivities) {
+                    activity.grantUriPermission(info.activityInfo.packageName, uri,
+                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                }
+
+                startActivityForResult(intent, PHOTO_REQUEST_CODE);
+            }
+        });
+    }
+
     private boolean existsContactsApp(Intent intent) {
         if (getActivity() == null) return false;
         PackageManager packageManager = getActivity().getPackageManager();
@@ -189,14 +252,10 @@ public class CrimeFragment extends Fragment {
             mCrime.setDate(date);
             mDateButton.setText(mCrime.getDate().toString());
         } else if (requestCode == CONTACT_REQUEST_CODE && data != null) {
-            // SOS: I only need access to a single contact. Contacts app grants me a one-time
-            // permission to read this URI, which is why don't have to explicitly ask for permission.
-            // Specifically, it adds Intent.FLAG_GRANT_READ_URI_PERMISSION to the intent it returns.
             Uri contactUri = data.getData();
 
             if (contactUri == null || getActivity() == null) return;
 
-            // SOS: contactUri refers to a single contact so cursor will return a single row with 1 field
             String[] queryFields = new String[]{ContactsContract.Contacts.DISPLAY_NAME};
 
             try (Cursor cursor = getActivity().getContentResolver().query(contactUri, queryFields,
@@ -209,6 +268,15 @@ public class CrimeFragment extends Fragment {
                 mCrime.setSuspect(suspect);
                 mChooseSuspectButton.setText(suspect);
             }
+        } else if (requestCode == PHOTO_REQUEST_CODE) {
+            if (getActivity() == null) return;
+            Uri uri = FileProvider.getUriForFile(getActivity(),
+                    "com.bignerdranch.criminalintent.fileprovider", mPhotoFile);
+
+            // SOS: this removes all permissions for all packages that I added previously
+            getActivity().revokeUriPermission(uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+
+            updatePhotoView();
         }
     }
 
@@ -239,5 +307,15 @@ public class CrimeFragment extends Fragment {
                 mCrime.getTitle(), dateString, solvedString, suspectString);
 
         return report;
+    }
+
+    private void updatePhotoView() {
+        if (mPhotoFile == null || !mPhotoFile.exists()) {
+            mPhotoView.setImageDrawable(null);
+        } else {
+            if (getActivity() == null) return;
+            Bitmap bitmap = PictureUtils.getConservativeEstimateBitmap(mPhotoFile.getPath(), getActivity());
+            mPhotoView.setImageBitmap(bitmap);
+        }
     }
 }

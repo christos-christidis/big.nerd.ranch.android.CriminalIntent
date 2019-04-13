@@ -9,6 +9,7 @@ import com.bignerdranch.criminalintent.database.CrimeCursorWrapper;
 import com.bignerdranch.criminalintent.database.CrimeDbHelper;
 import com.bignerdranch.criminalintent.database.CrimeDbSchema.CrimeTable;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -20,12 +21,11 @@ class CrimeLab {
 
     private static CrimeLab sCrimeLab;
 
-    private final Context mContext;
     private final SQLiteDatabase mDb;
 
     private CrimeLab(Context context) {
-        mContext = context.getApplicationContext();
-        mDb = new CrimeDbHelper(mContext).getWritableDatabase();
+        Context applicationContext = context.getApplicationContext();
+        mDb = new CrimeDbHelper(applicationContext).getWritableDatabase();
     }
 
     static CrimeLab get(Context context) {
@@ -82,6 +82,12 @@ class CrimeLab {
             cursor.moveToFirst();
             return cursor.retrieveCrime();
         }
+    }
+
+    // SOS: this does not create files, it just creates a File that points to the right place
+    File getPhotoFile(Crime crime, Context context) {
+        File filesDir = context.getFilesDir();
+        return new File(filesDir, crime.getPhotoFilename());
     }
 
     private static ContentValues getContentValues(Crime crime) {
