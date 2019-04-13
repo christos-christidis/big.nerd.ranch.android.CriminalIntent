@@ -173,11 +173,7 @@ public class CrimeFragment extends Fragment {
     // SOS: if there's no activity to handle the intent, Android throws an exception. This check makes
     // sure there's an app. The other way to avoid an exception is to use Intent.createChooser
     private boolean existsContactsApp(Intent intent) {
-        Activity activity = getActivity();
-        if (activity == null) {
-            return false;
-        }
-
+        if (getActivity() == null) return false;
         PackageManager packageManager = getActivity().getPackageManager();
         return packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY) != null;
     }
@@ -197,21 +193,15 @@ public class CrimeFragment extends Fragment {
             // permission to read this URI, which is why don't have to explicitly ask for permission.
             // Specifically, it adds Intent.FLAG_GRANT_READ_URI_PERMISSION to the intent it returns.
             Uri contactUri = data.getData();
-            if (contactUri == null) {
-                return;
-            }
 
-            Activity activity = getActivity();
-            if (activity == null) {
-                return;
-            }
+            if (contactUri == null || getActivity() == null) return;
 
             // SOS: contactUri refers to a single contact so cursor will return a single row with 1 field
             String[] queryFields = new String[]{ContactsContract.Contacts.DISPLAY_NAME};
 
-            try (Cursor cursor = activity.getContentResolver().query(contactUri, queryFields,
+            try (Cursor cursor = getActivity().getContentResolver().query(contactUri, queryFields,
                     null, null, null)) {
-                if (cursor == null || cursor.getCount() == 0) {
+                if (hasNoData(cursor)) {
                     return;
                 }
                 cursor.moveToFirst();
@@ -220,6 +210,10 @@ public class CrimeFragment extends Fragment {
                 mChooseSuspectButton.setText(suspect);
             }
         }
+    }
+
+    private boolean hasNoData(Cursor cursor) {
+        return cursor == null || cursor.getCount() == 0;
     }
 
     private String getCrimeReport() {

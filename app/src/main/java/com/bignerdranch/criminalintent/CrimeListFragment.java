@@ -1,6 +1,5 @@
 package com.bignerdranch.criminalintent;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -83,21 +82,20 @@ public class CrimeListFragment extends Fragment {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        Activity activity = getActivity();
-        if (activity == null) {
+        if (getActivity() == null) {
             return super.onOptionsItemSelected(item);
         }
 
         switch (item.getItemId()) {
             case R.id.new_crime:
                 Crime crime = new Crime();
-                CrimeLab.get(activity).addCrime(crime);
-                Intent intent = CrimePagerActivity.newIntent(activity, crime.getId());
+                CrimeLab.get(getActivity()).addCrime(crime);
+                Intent intent = CrimePagerActivity.newIntent(getActivity(), crime.getId());
                 startActivity(intent);
                 return true;
             case R.id.show_subtitle:
                 mSubtitleVisible = !mSubtitleVisible;
-                activity.invalidateOptionsMenu();
+                getActivity().invalidateOptionsMenu();
                 updateSubtitle();
                 return true;
             default:
@@ -107,14 +105,10 @@ public class CrimeListFragment extends Fragment {
 
     private void updateSubtitle() {
         AppCompatActivity activity = (AppCompatActivity) getActivity();
-        if (activity == null) {
-            return;
-        }
+        if (activity == null) return;
 
         ActionBar actionBar = activity.getSupportActionBar();
-        if (actionBar == null) {
-            return;
-        }
+        if (actionBar == null) return;
 
         CrimeLab crimeLab = CrimeLab.get(activity);
         int numCrimes = crimeLab.getCrimes().size();

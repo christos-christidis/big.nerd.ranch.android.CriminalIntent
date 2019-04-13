@@ -12,4 +12,8 @@ public class CrimeDbSchema {
             public static final String SUSPECT = "suspect";
         }
     }
+
+    // SOS: I made a private constructor so that it would stop bothering me about unused
+    private CrimeDbSchema() {
+    }
 }
