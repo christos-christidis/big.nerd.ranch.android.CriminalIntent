@@ -15,8 +15,6 @@ public class CrimeDbHelper extends SQLiteOpenHelper {
         super(context, DB_NAME, null, DB_VERSION);
     }
 
-
-    // SOS: SQLite does not require us to specify the types of columns at creation time!
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE " + CrimeTable.NAME + "(" +
@@ -24,7 +22,8 @@ public class CrimeDbHelper extends SQLiteOpenHelper {
                 CrimeTable.Cols.UUID + ", " +
                 CrimeTable.Cols.TITLE + ", " +
                 CrimeTable.Cols.DATE + ", " +
-                CrimeTable.Cols.SOLVED + ")"
+                CrimeTable.Cols.SOLVED + ", " +
+                CrimeTable.Cols.SUSPECT + ")"
         );
     }
 

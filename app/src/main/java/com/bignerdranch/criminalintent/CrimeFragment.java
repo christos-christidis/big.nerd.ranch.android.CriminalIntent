@@ -2,7 +2,11 @@ package com.bignerdranch.criminalintent;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
@@ -10,6 +14,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,10 +32,12 @@ public class CrimeFragment extends Fragment {
     private final static String ARG_CRIME_ID = "arg_crime_id";
     private final static String DATE_DIALOG_TAG = "DateDialog";
     private static final int DATE_REQUEST_CODE = 3;
+    private static final int CONTACT_REQUEST_CODE = 4;
 
     private Crime mCrime;
 
     private Button mDateButton;
+    private Button mChooseSuspectButton;
 
     public CrimeFragment() {
         // Required empty public constructor
@@ -70,12 +77,11 @@ public class CrimeFragment extends Fragment {
         setupTitleField(view);
         setupDateButton(view);
         setupSolvedCheckbox(view);
-
+        setUpSendReportButton(view);
+        setUpChooseSuspectButton(view);
         return view;
     }
 
-    // SOS: this is where we update the (possibly changed) crime in db. The crime was initially added
-    // to the db in CrimeListFragment before it was passed as an arg to CrimeFragment.
     @Override
     public void onPause() {
         super.onPause();
@@ -128,6 +134,54 @@ public class CrimeFragment extends Fragment {
         });
     }
 
+    private void setUpSendReportButton(View view) {
+        Button sendReportButton = view.findViewById(R.id.send_crime_report);
+        sendReportButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                intent.setType("text/plain");
+                intent.putExtra(Intent.EXTRA_TEXT, getCrimeReport());
+                intent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.crime_report_subject));
+                intent = Intent.createChooser(intent, getString(R.string.send_report_via));
+                startActivity(intent);
+            }
+        });
+    }
+
+    private void setUpChooseSuspectButton(View view) {
+        mChooseSuspectButton = view.findViewById(R.id.choose_suspect);
+        final Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+
+        if (!existsContactsApp(intent)) {
+            mChooseSuspectButton.setEnabled(false);
+            return;
+        }
+
+        mChooseSuspectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivityForResult(intent, CONTACT_REQUEST_CODE);
+            }
+        });
+
+        if (mCrime.getSuspect() != null) {
+            mChooseSuspectButton.setText(mCrime.getSuspect());
+        }
+    }
+
+    // SOS: if there's no activity to handle the intent, Android throws an exception. This check makes
+    // sure there's an app. The other way to avoid an exception is to use Intent.createChooser
+    private boolean existsContactsApp(Intent intent) {
+        Activity activity = getActivity();
+        if (activity == null) {
+            return false;
+        }
+
+        PackageManager packageManager = getActivity().getPackageManager();
+        return packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY) != null;
+    }
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode != Activity.RESULT_OK) {
@@ -138,6 +192,58 @@ public class CrimeFragment extends Fragment {
             Date date = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
             mCrime.setDate(date);
             mDateButton.setText(mCrime.getDate().toString());
+        } else if (requestCode == CONTACT_REQUEST_CODE && data != null) {
+            // SOS: I only need access to a single contact. Contacts app grants me a one-time
+            // permission to read this URI, which is why don't have to explicitly ask for permission.
+            // Specifically, it adds Intent.FLAG_GRANT_READ_URI_PERMISSION to the intent it returns.
+            Uri contactUri = data.getData();
+            if (contactUri == null) {
+                return;
+            }
+
+            Activity activity = getActivity();
+            if (activity == null) {
+                return;
+            }
+
+            // SOS: contactUri refers to a single contact so cursor will return a single row with 1 field
+            String[] queryFields = new String[]{ContactsContract.Contacts.DISPLAY_NAME};
+
+            try (Cursor cursor = activity.getContentResolver().query(contactUri, queryFields,
+                    null, null, null)) {
+                if (cursor == null || cursor.getCount() == 0) {
+                    return;
+                }
+                cursor.moveToFirst();
+                String suspect = cursor.getString(0);
+                mCrime.setSuspect(suspect);
+                mChooseSuspectButton.setText(suspect);
+            }
         }
+    }
+
+    private String getCrimeReport() {
+        String solvedString;
+        if (mCrime.isSolved()) {
+            solvedString = getString(R.string.crime_report_solved);
+        } else {
+            solvedString = getString(R.string.crime_report_unsolved);
+        }
+
+        String dateFormat = "EEE, MMM dd";
+        String dateString = DateFormat.format(dateFormat, mCrime.getDate()).toString();
+
+        String suspectString;
+        if (mCrime.getSuspect() == null) {
+            suspectString = getString(R.string.crime_report_no_suspect);
+        } else {
+            suspectString = getString(R.string.crime_report_suspect, mCrime.getSuspect());
+        }
+
+        @SuppressWarnings("UnnecessaryLocalVariable")
+        String report = getString(R.string.crime_report,
+                mCrime.getTitle(), dateString, solvedString, suspectString);
+
+        return report;
     }
 }
