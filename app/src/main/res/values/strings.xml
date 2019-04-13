@@ -25,4 +25,5 @@
     <string name="crime_report_no_suspect">there is no suspect.</string>
     <string name="crime_report_subject">CriminalIntent Crime Report</string>
     <string name="send_report_via">Send crime report via</string>
+    <string name="dial_suspect">Dial Suspect</string>
 </resources>

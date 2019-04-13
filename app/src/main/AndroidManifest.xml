@@ -3,6 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.bignerdranch.criminalintent">
 
+    <!-- SOS: DO NOT FORGET THIS. YOU WILL LOSE HOURS DEBUGGING -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"

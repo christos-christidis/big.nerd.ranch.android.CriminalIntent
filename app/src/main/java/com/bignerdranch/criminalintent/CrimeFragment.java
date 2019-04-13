@@ -1,18 +1,21 @@
 package com.bignerdranch.criminalintent;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.ShareCompat;
+import android.support.v4.content.ContextCompat;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.format.DateFormat;
@@ -28,7 +31,12 @@ import android.widget.Toast;
 import java.util.Date;
 import java.util.UUID;
 
+import static android.provider.ContactsContract.*;
+
 public class CrimeFragment extends Fragment {
+
+    private final static String PERMISSION_STRING = Manifest.permission.READ_CONTACTS;
+    private final static int PERMISSION_REQUEST_CODE = 369;
 
     private final static String ARG_CRIME_ID = "arg_crime_id";
     private final static String DATE_DIALOG_TAG = "DateDialog";
@@ -39,6 +47,7 @@ public class CrimeFragment extends Fragment {
 
     private Button mDateButton;
     private Button mChooseSuspectButton;
+    private Button mDialButton;
 
     public CrimeFragment() {
         // Required empty public constructor
@@ -80,6 +89,7 @@ public class CrimeFragment extends Fragment {
         setupSolvedCheckbox(view);
         setUpSendReportButton(view);
         setUpChooseSuspectButton(view);
+        setUpDialButton(view);
         return view;
     }
 
@@ -140,7 +150,6 @@ public class CrimeFragment extends Fragment {
         sendReportButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // SOS: Hm, this might be more streamlined but now we must also check activity != null
                 Activity activity = getActivity();
                 if (activity == null) {
                     return;
@@ -160,7 +169,7 @@ public class CrimeFragment extends Fragment {
 
     private void setUpChooseSuspectButton(View view) {
         mChooseSuspectButton = view.findViewById(R.id.choose_suspect);
-        final Intent intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+        final Intent intent = new Intent(Intent.ACTION_PICK, Contacts.CONTENT_URI);
 
         if (!existsContactsApp(intent)) {
             mChooseSuspectButton.setEnabled(false);
@@ -176,6 +185,25 @@ public class CrimeFragment extends Fragment {
 
         if (mCrime.getSuspect() != null) {
             mChooseSuspectButton.setText(mCrime.getSuspect());
+        }
+    }
+
+    private void setUpDialButton(View view) {
+        mDialButton = view.findViewById(R.id.dial_suspect);
+
+        mDialButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mCrime.getPhoneNumber() != null) {
+                    Uri phoneUri = Uri.parse("tel:" + mCrime.getPhoneNumber());
+                    Intent intent = new Intent(Intent.ACTION_DIAL, phoneUri);
+                    startActivity(intent);
+                }
+            }
+        });
+
+        if (mCrime.getPhoneNumber() != null) {
+            mDialButton.setText(mCrime.getPhoneNumber());
         }
     }
 
@@ -210,19 +238,83 @@ public class CrimeFragment extends Fragment {
                 return;
             }
 
-            String[] queryFields = new String[]{ContactsContract.Contacts.DISPLAY_NAME};
-
-            try (Cursor cursor = activity.getContentResolver().query(contactUri, queryFields,
+            // SOS: I simplify things by getting all columns (ie no projection)
+            ContentResolver contentResolver = activity.getContentResolver();
+            try (Cursor cursor = contentResolver.query(contactUri, null,
                     null, null, null)) {
-                if (cursor == null || cursor.getCount() == 0) {
+
+                if (hasNoData(cursor)) {
                     return;
                 }
                 cursor.moveToFirst();
-                String suspect = cursor.getString(0);
+                String suspect = cursor.getString(cursor.getColumnIndex(
+                        Contacts.DISPLAY_NAME));
                 mCrime.setSuspect(suspect);
                 mChooseSuspectButton.setText(suspect);
+
+                // SOS: make sure to read note on method below
+                if (!havePermission(activity)) {
+                    return;
+                }
+
+                String hasPhoneNumber = getString(cursor, Contacts.HAS_PHONE_NUMBER);
+                String lookupKey = getString(cursor, Contacts.LOOKUP_KEY);
+
+                if (hasPhoneNumber.equals("1")) {
+                    String phoneNumber = getPhoneNumber(contentResolver, lookupKey);
+                    mCrime.setPhoneNumber(phoneNumber);
+                    mDialButton.setText(phoneNumber);
+                }
             }
         }
+    }
+
+    // SOS: Do NOT use ActivityCompat.requestPermissions when requesting permissions from a fragment,
+    // otherwise onRequestPermissionsResult will be called on the activity, not the fragment! Just
+    // use plain fragment method requestPermissions.
+    private boolean havePermission(Context context) {
+        if (ContextCompat.checkSelfPermission(context, PERMISSION_STRING) !=
+                PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{PERMISSION_STRING}, PERMISSION_REQUEST_CODE);
+            return false;
+        }
+        return true;
+    }
+
+    private String getPhoneNumber(ContentResolver contentResolver, String lookupKey) {
+        try (Cursor phoneCursor = contentResolver.query(
+                CommonDataKinds.Phone.CONTENT_URI, null,
+                CommonDataKinds.Phone.LOOKUP_KEY + " = ?",
+                new String[]{lookupKey},
+                null)) {
+
+            if (hasNoData(phoneCursor)) {
+                return null;
+            }
+            phoneCursor.moveToFirst();
+            return getString(phoneCursor, CommonDataKinds.Phone.NUMBER);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(getActivity(), "Sorry, I'll need permission if you want to dial someone", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getActivity(), "Okay, choose suspect again to get number", Toast.LENGTH_SHORT).show();
+                mChooseSuspectButton.setText(R.string.choose_suspect);
+            }
+        }
+    }
+
+    // Little helper methods
+    private boolean hasNoData(Cursor cursor) {
+        return cursor == null || cursor.getCount() == 0;
+    }
+
+    private String getString(Cursor cursor, String column) {
+        return cursor.getString(cursor.getColumnIndex(column));
     }
 
     private String getCrimeReport() {
