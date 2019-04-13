@@ -12,6 +12,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.ShareCompat;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.format.DateFormat;
@@ -139,11 +140,19 @@ public class CrimeFragment extends Fragment {
         sendReportButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_SEND);
-                intent.setType("text/plain");
-                intent.putExtra(Intent.EXTRA_TEXT, getCrimeReport());
-                intent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.crime_report_subject));
-                intent = Intent.createChooser(intent, getString(R.string.send_report_via));
+                // SOS: Hm, this might be more streamlined but now we must also check activity != null
+                Activity activity = getActivity();
+                if (activity == null) {
+                    return;
+                }
+
+                Intent intent = ShareCompat.IntentBuilder.from(activity)
+                        .setType("text/plain")
+                        .setText(getCrimeReport())
+                        .setSubject(getString(R.string.crime_report_subject))
+                        .setChooserTitle(R.string.send_report_via)
+                        .createChooserIntent();
+
                 startActivity(intent);
             }
         });
@@ -170,8 +179,6 @@ public class CrimeFragment extends Fragment {
         }
     }
 
-    // SOS: if there's no activity to handle the intent, Android throws an exception. This check makes
-    // sure there's an app. The other way to avoid an exception is to use Intent.createChooser
     private boolean existsContactsApp(Intent intent) {
         Activity activity = getActivity();
         if (activity == null) {
@@ -193,9 +200,6 @@ public class CrimeFragment extends Fragment {
             mCrime.setDate(date);
             mDateButton.setText(mCrime.getDate().toString());
         } else if (requestCode == CONTACT_REQUEST_CODE && data != null) {
-            // SOS: I only need access to a single contact. Contacts app grants me a one-time
-            // permission to read this URI, which is why don't have to explicitly ask for permission.
-            // Specifically, it adds Intent.FLAG_GRANT_READ_URI_PERMISSION to the intent it returns.
             Uri contactUri = data.getData();
             if (contactUri == null) {
                 return;
@@ -206,7 +210,6 @@ public class CrimeFragment extends Fragment {
                 return;
             }
 
-            // SOS: contactUri refers to a single contact so cursor will return a single row with 1 field
             String[] queryFields = new String[]{ContactsContract.Contacts.DISPLAY_NAME};
 
             try (Cursor cursor = activity.getContentResolver().query(contactUri, queryFields,
