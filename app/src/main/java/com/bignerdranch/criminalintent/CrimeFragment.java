@@ -35,14 +35,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
-// SOS: There's an alternative to the strategy used here. I can create an intent with the action & the
-// uri and then call intent.setFlags(FLAG_GRANT_WRITE_URI_PERMISSION). The responding app will be the
-// only one that has permission and the permission will live as long as my app lives. But I can easily
-// revoke permission at any point with the way presented here. Seems better to me.
 public class CrimeFragment extends Fragment {
 
     private final static String ARG_CRIME_ID = "arg_crime_id";
+
     private final static String DATE_DIALOG_TAG = "DateDialog";
+    private final static String PHOTO_DIALOG_TAG = "PhotoDialog";
+
     private static final int DATE_REQUEST_CODE = 3;
     private static final int CONTACT_REQUEST_CODE = 4;
     private static final int PHOTO_REQUEST_CODE = 5;
@@ -52,7 +51,7 @@ public class CrimeFragment extends Fragment {
     private Button mDateButton;
     private Button mChooseSuspectButton;
     private ImageView mPhotoView;
-    private File mPhotoFile;    // SOS: this File points to the absolute path of the photo
+    private File mPhotoFile;
 
     public CrimeFragment() {
         // Required empty public constructor
@@ -133,12 +132,9 @@ public class CrimeFragment extends Fragment {
         mDateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                FragmentManager fragmentManager = getFragmentManager();
-                if (fragmentManager != null) {
-                    DialogFragment dialogFragment = DatePickerFragment.newInstance(mCrime.getDate());
-                    dialogFragment.setTargetFragment(CrimeFragment.this, DATE_REQUEST_CODE);
-                    dialogFragment.show(fragmentManager, DATE_DIALOG_TAG);
-                }
+                DialogFragment dialogFragment = DatePickerFragment.newInstance(mCrime.getDate());
+                dialogFragment.setTargetFragment(CrimeFragment.this, DATE_REQUEST_CODE);
+                showDialogFragment(dialogFragment, DATE_DIALOG_TAG);
             }
         });
     }
@@ -193,10 +189,27 @@ public class CrimeFragment extends Fragment {
     private void setUpPhotoView(View view) {
         mPhotoView = view.findViewById(R.id.crime_photo);
         updatePhotoView();
+        mPhotoView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (fileExists(mPhotoFile)) {
+                    DialogFragment dialogFragment = BiggerImageFragment.newInstance(mPhotoFile);
+                    showDialogFragment(dialogFragment, PHOTO_DIALOG_TAG);
+                } else {
+                    Toast.makeText(getActivity(), "No image to display!", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    private void showDialogFragment(DialogFragment dialogFragment, String fragmentTag) {
+        FragmentManager fragmentManager = getFragmentManager();
+        if (fragmentManager != null) {
+            dialogFragment.show(fragmentManager, fragmentTag);
+        }
     }
 
     private void setUpCameraButton(View view) {
-        // SOS: it's necessary to make this final, so that it can be accessed inside onClick.
         final Activity activity = getActivity();
         if (activity == null) {
             return;
@@ -214,9 +227,6 @@ public class CrimeFragment extends Fragment {
         cameraButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // SOS: this constructs a URI from the authority + the file (the file already contains
-                // an absolute path). If I don't add the uri, camera will put a thumbnail image in its
-                // return intent
                 Uri uri = FileProvider.getUriForFile(activity,
                         "com.bignerdranch.criminalintent.fileprovider", mPhotoFile);
                 intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
@@ -224,7 +234,6 @@ public class CrimeFragment extends Fragment {
                 List<ResolveInfo> cameraActivities = packageManager.queryIntentActivities(
                         intent, PackageManager.MATCH_DEFAULT_ONLY);
 
-                // SOS: I grant write access ONLY to the specific uri to the packages of the activities
                 for (ResolveInfo info : cameraActivities) {
                     activity.grantUriPermission(info.activityInfo.packageName, uri,
                             Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
@@ -273,7 +282,6 @@ public class CrimeFragment extends Fragment {
             Uri uri = FileProvider.getUriForFile(getActivity(),
                     "com.bignerdranch.criminalintent.fileprovider", mPhotoFile);
 
-            // SOS: this removes all permissions for all packages that I added previously
             getActivity().revokeUriPermission(uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
 
             updatePhotoView();
@@ -310,12 +318,16 @@ public class CrimeFragment extends Fragment {
     }
 
     private void updatePhotoView() {
-        if (mPhotoFile == null || !mPhotoFile.exists()) {
-            mPhotoView.setImageDrawable(null);
-        } else {
+        if (fileExists(mPhotoFile)) {
             if (getActivity() == null) return;
             Bitmap bitmap = PictureUtils.getConservativeEstimateBitmap(mPhotoFile.getPath(), getActivity());
             mPhotoView.setImageBitmap(bitmap);
+        } else {
+            mPhotoView.setImageDrawable(null);
         }
+    }
+
+    private boolean fileExists(File file) {
+        return file != null && file.exists();
     }
 }

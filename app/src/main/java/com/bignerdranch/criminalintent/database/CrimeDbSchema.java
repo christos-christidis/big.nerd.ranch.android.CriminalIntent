@@ -13,7 +13,6 @@ public class CrimeDbSchema {
         }
     }
 
-    // SOS: I made a private constructor so that it would stop bothering me about unused
     private CrimeDbSchema() {
     }
 }

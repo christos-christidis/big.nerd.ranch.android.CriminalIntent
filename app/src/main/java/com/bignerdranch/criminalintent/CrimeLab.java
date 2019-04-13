@@ -84,7 +84,6 @@ class CrimeLab {
         }
     }
 
-    // SOS: this does not create files, it just creates a File that points to the right place
     File getPhotoFile(Crime crime, Context context) {
         File filesDir = context.getFilesDir();
         return new File(filesDir, crime.getPhotoFilename());

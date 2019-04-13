@@ -3,8 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.bignerdranch.criminalintent">
 
-    <!-- SOS: it's good to declare whatever feature I use, eg gps, nfc etc. I set required to false,
-    because even devices without a camera can install this app. I handle its absence gracefully -->
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
@@ -29,10 +27,6 @@
             android:name=".CrimePagerActivity"
             android:parentActivityName=".CrimeListActivity" />
 
-        <!-- SOS: We don't need to implement our own ContentProvider, we use Google's FileProvider.
-        Authority should be like here. exported=false allows access only to those apps I grant
-        permission to. Finally, grantUri.. means I'll grant permission to write to URIs of this
-        authority when I send them out in an Intent. -->
         <provider
             android:name="android.support.v4.content.FileProvider"
             android:authorities="com.bignerdranch.criminalintent.fileprovider"
