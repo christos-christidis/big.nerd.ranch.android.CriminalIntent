@@ -1,6 +1,6 @@
 package com.bignerdranch.criminalintent;
 
-import android.content.Intent;
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -29,8 +29,32 @@ public class CrimeListFragment extends Fragment {
 
     private boolean mSubtitleVisible;
 
+    // SOS: Fragments must be reusable. Previously, a viewholder responded to a click by starting the
+    // CrimePagerActivity. That is NOT good. We should let the hosting activity decide which activity
+    // to start or what fragment to insert in what container... The best way to do that is to make
+    // the activity implement this interface so that the fragment can notify it.
+    interface CallBacks {
+        void onCrimeSelected(Crime crime);
+    }
+
+    private CallBacks mCallBacks;
+
     public CrimeListFragment() {
         // Required empty public constructor
+    }
+
+    // SOS: The only expectation placed on the hosting activity is that it implements this interface
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        mCallBacks = (CallBacks) context;
+    }
+
+    // SOS: the book says setting to null when done is good practice.
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mCallBacks = null;
     }
 
     @Override
@@ -62,6 +86,7 @@ public class CrimeListFragment extends Fragment {
         return view;
     }
 
+    // SOS: discovered by mistake: activity/fragment does NOT pause when dialog is shown on-top!?
     @Override
     public void onResume() {
         super.onResume();
@@ -90,8 +115,9 @@ public class CrimeListFragment extends Fragment {
             case R.id.new_crime:
                 Crime crime = new Crime();
                 CrimeLab.get(getActivity()).addCrime(crime);
-                Intent intent = CrimePagerActivity.newIntent(getActivity(), crime.getId());
-                startActivity(intent);
+                // SOS: on tablet, list is always visible, so show new empty crime immediately
+                updateUI();
+                mCallBacks.onCrimeSelected(crime);
                 return true;
             case R.id.show_subtitle:
                 mSubtitleVisible = !mSubtitleVisible;
@@ -119,7 +145,11 @@ public class CrimeListFragment extends Fragment {
         actionBar.setSubtitle(subtitle);
     }
 
-    private void updateUI() {
+    // SOS: previously we called this only on creation and in onResume. Now the list is visible all
+    // the time, so it must be updated whenever a crime changes ('in real-time'). Solution: another
+    // interface that will enable CrimeFragment to notify this fragment's activity. The activity will
+    // then call this method on the fragment. Success.
+    void updateUI() {
         CrimeLab crimeLab = CrimeLab.get(getActivity());
         List<Crime> crimes = crimeLab.getCrimes();
 
@@ -160,8 +190,7 @@ public class CrimeListFragment extends Fragment {
 
         @Override
         public void onClick(View v) {
-            Intent intent = CrimePagerActivity.newIntent(getActivity(), mCrime.getId());
-            startActivity(intent);
+            mCallBacks.onCrimeSelected(mCrime);
         }
     }
 

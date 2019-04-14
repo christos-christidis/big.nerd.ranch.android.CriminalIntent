@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- SOS: the id of this is R.[type].[name], ie R.layout.activity_masterdetail -->
+    <item name="app_layout" type="layout">@layout/activity_single_fragment</item>
+</resources>

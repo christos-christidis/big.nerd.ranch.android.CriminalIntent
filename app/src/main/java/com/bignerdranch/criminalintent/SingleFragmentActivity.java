@@ -1,5 +1,6 @@
 package com.bignerdranch.criminalintent;
 
+import android.support.annotation.LayoutRes;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
@@ -9,10 +10,15 @@ abstract class SingleFragmentActivity extends AppCompatActivity {
 
     abstract Fragment createFragment();
 
+    @LayoutRes
+    int getLayoutResId() {
+        return R.layout.activity_single_fragment;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_single_fragment);
+        setContentView(getLayoutResId());
 
         FragmentManager fragmentManager = getSupportFragmentManager();
 

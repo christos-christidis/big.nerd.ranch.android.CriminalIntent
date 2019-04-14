@@ -10,7 +10,6 @@ class PictureUtils {
     private static Bitmap getScaledBitmap(String path, Point destSize) {
         Point srcSize = getSrcImageSize(path);
 
-        // SOS: For every inSampleSize (eg 2) pixels, there'll be 1 pixel in the final bitmap
         int inSampleSize = 1;
         if (srcSize.x > destSize.x || srcSize.y > destSize.y) {
             float widthScale = (float) srcSize.x / destSize.x;
@@ -32,8 +31,6 @@ class PictureUtils {
         return new Point(options.outWidth, options.outHeight);
     }
 
-    // SOS: unfortunately I don't know the exact dimensions of the ImageView before the 1st layout
-    // pass. Thus, I have to make a conservative estimate, eg use the size of the screen.
     static Bitmap getConservativeEstimateBitmap(String path, Activity activity) {
         Point screenSize = new Point();
         activity.getWindowManager().getDefaultDisplay().getSize(screenSize);
