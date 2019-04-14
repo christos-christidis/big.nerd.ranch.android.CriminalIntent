@@ -16,7 +16,6 @@ public class CrimeListActivity extends SingleFragmentActivity
         return new CrimeListFragment();
     }
 
-    // SOS: remember, the "main" fragment's already been added in SingleFragmentActivity's onCreate
     @Override
     public void onCrimeSelected(Crime crime) {
         if (findViewById(R.id.detail_fragment_container) == null) {

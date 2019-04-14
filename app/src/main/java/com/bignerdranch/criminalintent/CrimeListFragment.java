@@ -9,6 +9,7 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -29,10 +30,6 @@ public class CrimeListFragment extends Fragment {
 
     private boolean mSubtitleVisible;
 
-    // SOS: Fragments must be reusable. Previously, a viewholder responded to a click by starting the
-    // CrimePagerActivity. That is NOT good. We should let the hosting activity decide which activity
-    // to start or what fragment to insert in what container... The best way to do that is to make
-    // the activity implement this interface so that the fragment can notify it.
     interface CallBacks {
         void onCrimeSelected(Crime crime);
     }
@@ -43,14 +40,12 @@ public class CrimeListFragment extends Fragment {
         // Required empty public constructor
     }
 
-    // SOS: The only expectation placed on the hosting activity is that it implements this interface
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         mCallBacks = (CallBacks) context;
     }
 
-    // SOS: the book says setting to null when done is good practice.
     @Override
     public void onDetach() {
         super.onDetach();
@@ -83,10 +78,14 @@ public class CrimeListFragment extends Fragment {
 
         updateUI();
 
+        // SOS: Because mAdapter is first set in updateUI, this itemTouchHelper stuff must be put
+        // after the call to updateUI(). Hm, that seems like bad design to me
+        ItemTouchHelper itemTouchHelper = new ItemTouchHelper(new ItemTouchHelperSimpleCallback(mCrimeAdapter));
+        itemTouchHelper.attachToRecyclerView(mCrimeRecyclerView);
+
         return view;
     }
 
-    // SOS: discovered by mistake: activity/fragment does NOT pause when dialog is shown on-top!?
     @Override
     public void onResume() {
         super.onResume();
@@ -115,7 +114,6 @@ public class CrimeListFragment extends Fragment {
             case R.id.new_crime:
                 Crime crime = new Crime();
                 CrimeLab.get(getActivity()).addCrime(crime);
-                // SOS: on tablet, list is always visible, so show new empty crime immediately
                 updateUI();
                 mCallBacks.onCrimeSelected(crime);
                 return true;
@@ -145,10 +143,6 @@ public class CrimeListFragment extends Fragment {
         actionBar.setSubtitle(subtitle);
     }
 
-    // SOS: previously we called this only on creation and in onResume. Now the list is visible all
-    // the time, so it must be updated whenever a crime changes ('in real-time'). Solution: another
-    // interface that will enable CrimeFragment to notify this fragment's activity. The activity will
-    // then call this method on the fragment. Success.
     void updateUI() {
         CrimeLab crimeLab = CrimeLab.get(getActivity());
         List<Crime> crimes = crimeLab.getCrimes();
@@ -194,7 +188,7 @@ public class CrimeListFragment extends Fragment {
         }
     }
 
-    private class CrimeAdapter extends RecyclerView.Adapter<CrimeViewHolder> {
+    private class CrimeAdapter extends RecyclerView.Adapter<CrimeViewHolder> implements OnSwipeListener {
 
         private List<Crime> mCrimes;
 
@@ -223,6 +217,44 @@ public class CrimeListFragment extends Fragment {
         @Override
         public int getItemCount() {
             return mCrimes.size();
+        }
+
+        @Override
+        public void onSwipeRight(int position) {
+            CrimeLab.get(getActivity()).deleteCrime(mCrimes.get(position));
+            updateUI();
+        }
+    }
+
+    // SOS: This is the interface recyclerview-adapter will implement to be notified of right swipes
+    interface OnSwipeListener {
+        void onSwipeRight(int position);
+    }
+
+    // SOS: this class has its methods called by ItemTouchHelper and in turn notifies the adapter
+    private class ItemTouchHelperSimpleCallback extends ItemTouchHelper.SimpleCallback {
+
+        private final OnSwipeListener mListener;
+
+        // SOS: the args passed in super() mean that this class only cares about right swipes
+        ItemTouchHelperSimpleCallback(OnSwipeListener listener) {
+            super(0, ItemTouchHelper.RIGHT);
+            mListener = listener;
+        }
+
+        // SOS:
+        @Override
+        public boolean onMove(@NonNull RecyclerView recyclerView,
+                              @NonNull RecyclerView.ViewHolder viewHolder,
+                              @NonNull RecyclerView.ViewHolder viewHolder1) {
+            return false;
+        }
+
+        @Override
+        public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int i) {
+            if (mListener != null) {
+                mListener.onSwipeRight(viewHolder.getAdapterPosition());
+            }
         }
     }
 }

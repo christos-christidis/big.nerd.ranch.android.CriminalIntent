@@ -12,10 +12,6 @@ import android.os.Bundle;
 import java.util.List;
 import java.util.UUID;
 
-// SOS: On tablets, it's CrimeListFragment that hosts CrimeFragment. This activity is used only on the
-// phone version and there's no need to notify it of the crime being updated. Nevertheless, it too
-// hosts CrimeFragment and the latter will cast it to Callbacks and proceed to call onCrimeUpdated on
-// it. Therefore, it too must implement CrimeFragment.Callbacks (method will be empty)
 public class CrimePagerActivity extends AppCompatActivity implements CrimeFragment.Callbacks {
 
     private static final String EXTRA_CRIME_ID = "com.bignerdranch.crime_id";

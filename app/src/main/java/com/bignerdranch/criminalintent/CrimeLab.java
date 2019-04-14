@@ -49,6 +49,11 @@ class CrimeLab {
                 new String[]{uuidString});
     }
 
+    void deleteCrime(Crime crime) {
+        String uuidString = crime.getId().toString();
+        mDb.delete(CrimeTable.NAME, CrimeTable.Cols.UUID + " = ?", new String[]{uuidString});
+    }
+
     private CrimeCursorWrapper queryCrimes(String whereClause, String[] whereArgs) {
         Cursor cursor = mDb.query(CrimeTable.NAME, null,   // null = select all columns
                 whereClause, whereArgs,
