@@ -27,4 +27,6 @@
     <string name="list_item_date">Fecha del crimen</string>
     <string name="image_of_handcuffs">imagen de las esposas</string>
     <string name="take_picture">Fotografiar</string>
+    <string name="crime_photo_no_image_description">Escena del crimen foto (no establecido)</string>
+    <string name="crime_photo_image_description">Escena del crimen foto (establecido)</string>
 </resources>

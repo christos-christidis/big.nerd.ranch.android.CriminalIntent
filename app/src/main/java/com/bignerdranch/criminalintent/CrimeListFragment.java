@@ -29,10 +29,7 @@ public class CrimeListFragment extends Fragment {
 
     private boolean mSubtitleVisible;
 
-    // SOS: Fragments must be reusable. Previously, a viewholder responded to a click by starting the
-    // CrimePagerActivity. That is NOT good. We should let the hosting activity decide which activity
-    // to start or what fragment to insert in what container... The best way to do that is to make
-    // the activity implement this interface so that the fragment can notify it.
+    // SOS: Fragment must be reusable. Let the host activity decide what to do when a crime is selected.
     interface CallBacks {
         void onCrimeSelected(Crime crime);
     }
@@ -43,14 +40,13 @@ public class CrimeListFragment extends Fragment {
         // Required empty public constructor
     }
 
-    // SOS: The only expectation placed on the hosting activity is that it implements this interface
+    // SOS: The only expectation placed on the host activity is that it implements this interface
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         mCallBacks = (CallBacks) context;
     }
 
-    // SOS: the book says setting to null when done is good practice.
     @Override
     public void onDetach() {
         super.onDetach();
@@ -86,7 +82,25 @@ public class CrimeListFragment extends Fragment {
         return view;
     }
 
-    // SOS: discovered by mistake: activity/fragment does NOT pause when dialog is shown on-top!?
+    // SOS: this loads the crimes (which may have changed from CrimeLab and passes them to the adapter.
+    // Since the list may be visible all the time (if we're on a tablet), this must be called whenever
+    // a crime is changed ("in real-time").
+    void updateUI() {
+        CrimeLab crimeLab = CrimeLab.get(getActivity());
+        List<Crime> crimes = crimeLab.getCrimes();
+
+        if (mCrimeAdapter == null) {
+            mCrimeAdapter = new CrimeAdapter(crimes);
+            mCrimeRecyclerView.setAdapter(mCrimeAdapter);
+        } else {
+            mCrimeAdapter.setCrimes(crimes);
+            mCrimeAdapter.notifyDataSetChanged();
+        }
+
+        updateSubtitle();
+    }
+
+    // SOS: In the case of phone, this happens on return from the "detail"-activity
     @Override
     public void onResume() {
         super.onResume();
@@ -115,7 +129,6 @@ public class CrimeListFragment extends Fragment {
             case R.id.new_crime:
                 Crime crime = new Crime();
                 CrimeLab.get(getActivity()).addCrime(crime);
-                // SOS: on tablet, list is always visible, so show new empty crime immediately
                 updateUI();
                 mCallBacks.onCrimeSelected(crime);
                 return true;
@@ -143,25 +156,6 @@ public class CrimeListFragment extends Fragment {
             subtitle = null;
         }
         actionBar.setSubtitle(subtitle);
-    }
-
-    // SOS: previously we called this only on creation and in onResume. Now the list is visible all
-    // the time, so it must be updated whenever a crime changes ('in real-time'). Solution: another
-    // interface that will enable CrimeFragment to notify this fragment's activity. The activity will
-    // then call this method on the fragment. Success.
-    void updateUI() {
-        CrimeLab crimeLab = CrimeLab.get(getActivity());
-        List<Crime> crimes = crimeLab.getCrimes();
-
-        if (mCrimeAdapter == null) {
-            mCrimeAdapter = new CrimeAdapter(crimes);
-            mCrimeRecyclerView.setAdapter(mCrimeAdapter);
-        } else {
-            mCrimeAdapter.setCrimes(crimes);
-            mCrimeAdapter.notifyDataSetChanged();
-        }
-
-        updateSubtitle();
     }
 
     private class CrimeViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {

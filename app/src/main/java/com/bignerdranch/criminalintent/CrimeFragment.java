@@ -145,6 +145,7 @@ public class CrimeFragment extends Fragment {
         });
     }
 
+    // SOS: I found out that the activity/fragment is NOT paused when a dialog is shown on top of it!!!
     private void setUpDateButton(View view) {
         mDateButton = view.findViewById(R.id.date_button);
         mDateButton.setText(mCrime.getDate().toString());

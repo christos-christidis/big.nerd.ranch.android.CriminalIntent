@@ -14,9 +14,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-// TODO: supposedly this class is a Singleton because it centralizes control of this list. But this
-// particular singleton simply returns the list, that then ANYONE can modify. I'm leaving it as is for
-// now until I'm sure it's not needed in later chapters for some reason.
+// SOS: this is less than ideal. Singletons make it impossible to test and also to know which class
+// uses them/changes stuff in them. The alternative is to instantiate a CrimeLab in the top-activity
+// CrimeListActivity and pass it to everyone that needs it. Singletons are for stuff that will
+// literally be used everywhere (eg Log). HOWEVER. It's difficult to see how I can pass the CrimeLab
+// to a fragment as an extra (I can't serialize it or make it Parcelable... yet)
 class CrimeLab {
 
     private static CrimeLab sCrimeLab;
