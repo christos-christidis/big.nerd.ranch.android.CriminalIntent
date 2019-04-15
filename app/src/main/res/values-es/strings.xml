@@ -23,4 +23,8 @@
     <string name="crime_report_no_suspect">no hay sospechoso.</string>
     <string name="crime_report_subject">Intento Criminal Informe del Crimen</string>
     <string name="send_report_via">Enviar el informe del crimen a través de</string>
+    <string name="list_item_title">Título del crimen</string>
+    <string name="list_item_date">Fecha del crimen</string>
+    <string name="image_of_handcuffs">imagen de las esposas</string>
+    <string name="take_picture">Fotografiar</string>
 </resources>
