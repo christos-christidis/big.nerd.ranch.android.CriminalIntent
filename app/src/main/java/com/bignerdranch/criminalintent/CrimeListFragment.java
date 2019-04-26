@@ -184,7 +184,7 @@ public class CrimeListFragment extends Fragment {
         void bind(Crime crime) {
             mCrime = crime;
             mTitleTextView.setText(crime.getTitle());
-            mDateTextView.setText(crime.getDate().toString());
+            DateUtils.setDateText(mDateTextView, crime.getDate());
             mSolvedImageView.setVisibility(mCrime.isSolved() ? View.VISIBLE : View.INVISIBLE);
         }
 

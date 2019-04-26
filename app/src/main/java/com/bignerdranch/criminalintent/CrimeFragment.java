@@ -147,7 +147,7 @@ public class CrimeFragment extends Fragment {
 
     private void setUpDateButton(View view) {
         mDateButton = view.findViewById(R.id.date_button);
-        mDateButton.setText(mCrime.getDate().toString());
+        DateUtils.setDateText(mDateButton, mCrime.getDate());
         mDateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -265,7 +265,7 @@ public class CrimeFragment extends Fragment {
             Date date = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
             mCrime.setDate(date);
             updateCrime();
-            mDateButton.setText(mCrime.getDate().toString());
+            DateUtils.setDateText(mDateButton, mCrime.getDate());
         } else if (requestCode == CONTACT_REQUEST_CODE && data != null) {
             Uri contactUri = data.getData();
 
@@ -313,8 +313,7 @@ public class CrimeFragment extends Fragment {
             solvedString = getString(R.string.crime_report_unsolved);
         }
 
-        String dateFormat = "EEE, MMM dd";
-        String dateString = DateFormat.format(dateFormat, mCrime.getDate()).toString();
+        String dateString = DateFormat.format("EEE, MMM dd", mCrime.getDate()).toString();
 
         String suspectString;
         if (mCrime.getSuspect() == null) {
